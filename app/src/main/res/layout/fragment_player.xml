@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.motion.widget.MotionLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#fff"
+    app:layoutDescription="@xml/player_motion_scene"
+    tools:context=".ui.player.PlayerFragment">
+
+
+    <TextView
+        android:id="@+id/sound_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:textColor="#000"
+        android:textSize="16sp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:text="دردشة حول مدرسة المنار 05" />
+
+    <com.google.android.material.slider.Slider
+        android:id="@+id/song_timer"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:value="60"
+        android:valueFrom="0"
+        android:valueTo="100"
+        app:layout_constraintEnd_toStartOf="@+id/song_total_time"
+        app:layout_constraintStart_toEndOf="@+id/song_timer_counter"
+        app:layout_constraintTop_toBottomOf="@+id/sound_title"
+        app:thumbColor="#FF2D55"
+        app:thumbRadius="5dp"
+        app:trackColorActive="#FF2D55"
+        app:trackColorInactive="#46FF2D55"
+        app:trackHeight="2dp" />
+
+    <com.google.android.material.textview.MaterialTextView
+        android:id="@+id/song_timer_counter"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:padding="8dp"
+        app:layout_constraintBottom_toBottomOf="@+id/song_timer"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/textView"
+        tools:text="03:33" />
+
+    <com.google.android.material.textview.MaterialTextView
+        android:id="@+id/song_total_time"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:padding="8dp"
+        app:layout_constraintBottom_toBottomOf="@+id/song_timer"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/textView"
+        tools:text="04:56" />
+
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/checkBox"
+        android:layout_width="64dp"
+        android:layout_height="64dp"
+        android:outlineSpotShadowColor="#FF2D55"
+        app:cardCornerRadius="360dp"
+        app:cardElevation="16dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/song_timer"
+        app:layout_constraintVertical_bias="0.19999999">
+
+        <com.google.android.material.checkbox.MaterialCheckBox
+            android:layout_width="78dp"
+            android:layout_height="78dp"
+            android:layout_gravity="center"
+            android:background="@drawable/playpauseselector"
+            android:button="@null"
+            app:backgroundTint="#FF2D55" />
+    </com.google.android.material.card.MaterialCardView>
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/next_audio"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:background="@drawable/ic_next"
+        app:backgroundTint="#FF2D55"
+        app:layout_constraintBottom_toBottomOf="@+id/checkBox"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/checkBox"
+        app:layout_constraintTop_toTopOf="@+id/checkBox" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/previous_audio"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:background="@drawable/ic_previous"
+        app:backgroundTint="#FF2D55"
+        app:layout_constraintBottom_toBottomOf="@+id/checkBox"
+        app:layout_constraintEnd_toStartOf="@+id/checkBox"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/checkBox" />
+
+</androidx.constraintlayout.motion.widget.MotionLayout>
