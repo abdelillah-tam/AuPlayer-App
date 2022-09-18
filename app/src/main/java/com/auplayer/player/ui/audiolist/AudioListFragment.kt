@@ -9,6 +9,7 @@ import android.content.Context.NOTIFICATION_SERVICE
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
 import android.provider.MediaStore
@@ -104,7 +105,11 @@ class AudioListFragment : Fragment(R.layout.fragment_audio_list), PlayerControll
                         val intent = Intent(requireContext(), PlaybackService::class.java)
                             .setAction(PLAY)
                             .putExtra("soundItem", soundItem)
-                        mPlaybackService.startService(intent)
+                        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                            mPlaybackService.startForegroundService(intent)
+                        }else{
+                            mPlaybackService.startService(intent)
+                        }
                     }
                     return true
                 }
@@ -165,20 +170,32 @@ class AudioListFragment : Fragment(R.layout.fragment_audio_list), PlayerControll
         binding.playerController.next.setOnClickListener {
             val intent = Intent(requireContext(), PlaybackService::class.java)
                 .setAction(NEXT)
-            mPlaybackService.startService(intent)
+            if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                mPlaybackService.startForegroundService(intent)
+            }else{
+                mPlaybackService.startService(intent)
+            }
         }
 
         binding.playerController.playAndPause.setOnClickListener {
             val intent = Intent(requireContext(), PlaybackService::class.java)
                 .setAction(STOP)
-            mPlaybackService.startService(intent)
+            if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                mPlaybackService.startForegroundService(intent)
+            }else{
+                mPlaybackService.startService(intent)
+            }
 
         }
 
         binding.playerController.previous.setOnClickListener {
             val intent = Intent(requireContext(), PlaybackService::class.java)
                 .setAction(PREVIOUS)
-            mPlaybackService.startService(intent)
+            if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                mPlaybackService.startForegroundService(intent)
+            }else{
+                mPlaybackService.startService(intent)
+            }
         }
     }
 
@@ -291,6 +308,7 @@ class AudioListFragment : Fragment(R.layout.fragment_audio_list), PlayerControll
                 }
                 setContentTitle(soundName)
                 setOnlyAlertOnce(true)
+                setColorized(true)
                 addAction(R.drawable.ic_previous, "Previous", previous)
                 if (playing) {
                     addAction(R.drawable.ic_pause, "play or stop", play)

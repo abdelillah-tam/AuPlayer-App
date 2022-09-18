@@ -4,13 +4,17 @@ import android.app.Service
 import android.content.ContentUris
 import android.content.Intent
 import android.media.AudioAttributes
+import android.media.AudioFocusRequest
+import android.media.AudioManager
 import android.media.MediaPlayer
 import android.net.Uri
 import android.os.Binder
 import android.os.IBinder
 import android.provider.MediaStore
+import android.util.Log
 import androidx.lifecycle.LifecycleService
 import androidx.lifecycle.lifecycleScope
+import androidx.media.AudioFocusRequestCompat
 import com.auplayer.player.domain.model.SoundItem
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -18,6 +22,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 
+private const val TAG = "PlaybackService"
 
 class PlaybackService : LifecycleService(),
     MediaPlayer.OnPreparedListener,
@@ -56,7 +61,36 @@ class PlaybackService : LifecycleService(),
             setOnErrorListener(this@PlaybackService)
             setOnSeekCompleteListener(this@PlaybackService)
         }
+        val audioManager = getSystemService(AUDIO_SERVICE) as AudioManager
+
+        val requestListener = AudioManager.OnAudioFocusChangeListener { focus ->
+            when(focus){
+                AudioManager.AUDIOFOCUS_GAIN ->{
+                    if(!mediaPlayer!!.isPlaying){
+                        mediaPlayer!!.start()
+                    }
+                }
+
+                AudioManager.AUDIOFOCUS_LOSS ->{
+                    if (mediaPlayer != null) {
+                        mediaPlayer!!.stop()
+                        mediaPlayer!!.release()
+                        mediaPlayer = null
+                    }
+                }
+
+                AudioManager.AUDIOFOCUS_LOSS_TRANSIENT ->{
+                    if(mediaPlayer != null && mediaPlayer!!.isPlaying){
+                        mediaPlayer!!.pause()
+                    }
+                }
+            }
+        }
+
+
+        audioManager.requestAudioFocus(requestListener, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN)
     }
+
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         super.onStartCommand(intent, flags, startId)
@@ -101,6 +135,7 @@ class PlaybackService : LifecycleService(),
     }
 
     override fun onPrepared(p0: MediaPlayer?) {
+        Log.e(TAG, "onPrepared: called" )
         if (p0 != null) {
             p0.start()
             if (p0.isPlaying) {
@@ -113,6 +148,7 @@ class PlaybackService : LifecycleService(),
     }
 
     override fun onInfo(p0: MediaPlayer?, p1: Int, p2: Int): Boolean {
+        Log.e(TAG, "onInfo: called" )
         return true
     }
 
@@ -124,15 +160,16 @@ class PlaybackService : LifecycleService(),
     }
 
     override fun onBufferingUpdate(p0: MediaPlayer?, p1: Int) {
-
+        Log.e(TAG, "onBufferingUpdate: called" )
     }
 
     override fun onError(p0: MediaPlayer?, p1: Int, p2: Int): Boolean {
+        Log.e(TAG, "onError: called" )
         return true
     }
 
     override fun onSeekComplete(p0: MediaPlayer?) {
-
+        Log.e(TAG, "onSeekComplete: called")
     }
 
     fun getMediaPlayer(): MediaPlayer {

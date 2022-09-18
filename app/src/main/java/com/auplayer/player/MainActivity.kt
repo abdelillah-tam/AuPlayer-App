@@ -19,9 +19,6 @@ class MainActivity : AppCompatActivity() {
         window.navigationBarColor = resources.getColor(R.color.white)
         controllerInsets.isAppearanceLightNavigationBars = true
 
-        val audioManager = getSystemService(AUDIO_SERVICE) as AudioManager
-        AudioManager.OnAudioFocusChangeListener {
-            
-        }
+
     }
 }
