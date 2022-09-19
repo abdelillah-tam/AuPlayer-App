@@ -172,8 +172,9 @@
         app:duration="500">
         <OnSwipe
             app:dragDirection="dragUp"
-            app:dragScale="20"
+            app:dragScale="30"
             app:onTouchUp="autoComplete"
+            app:autoCompleteMode="continuousVelocity"
             app:maxAcceleration="3000"
             app:maxVelocity="2000"
            />

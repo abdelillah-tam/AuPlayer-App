@@ -71,7 +71,7 @@ class PlaybackService : LifecycleService(),
         val requestListener = AudioManager.OnAudioFocusChangeListener { focus ->
             when (focus) {
                 AudioManager.AUDIOFOCUS_GAIN -> {
-                    if (!mediaPlayer!!.isPlaying) {
+                    if (!mediaPlayer!!.isPlaying && playingState.value) {
                         mediaPlayer!!.start()
                     }
                 }
