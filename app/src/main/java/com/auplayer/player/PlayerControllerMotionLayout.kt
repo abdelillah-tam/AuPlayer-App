@@ -8,6 +8,7 @@ import android.view.View
 import androidx.constraintlayout.motion.widget.MotionLayout
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.checkbox.MaterialCheckBox
+import com.google.android.material.slider.Slider
 import com.google.android.material.textview.MaterialTextView
 
 class PlayerControllerMotionLayout @JvmOverloads constructor(
@@ -22,6 +23,9 @@ class PlayerControllerMotionLayout @JvmOverloads constructor(
     var playAndPause: MaterialCheckBox
     var next: MaterialButton
     var previous: MaterialButton
+    var totalTime: MaterialTextView
+    var soundTimer: MaterialTextView
+    var soundTimerSlider: Slider
     private var view: View
 
 
@@ -33,6 +37,9 @@ class PlayerControllerMotionLayout @JvmOverloads constructor(
         playAndPause = motionLayout.findViewById(R.id.play_and_pause) as MaterialCheckBox
         next = motionLayout.findViewById(R.id.next_audio) as MaterialButton
         previous = motionLayout.findViewById(R.id.previous_audio) as MaterialButton
+        totalTime = motionLayout.findViewById(R.id.song_total_time) as MaterialTextView
+        soundTimer = motionLayout.findViewById(R.id.song_timer_counter) as MaterialTextView
+        soundTimerSlider = motionLayout.findViewById(R.id.song_timer) as Slider
         view = motionLayout.findViewById(R.id.backgrounds) as View
 
 

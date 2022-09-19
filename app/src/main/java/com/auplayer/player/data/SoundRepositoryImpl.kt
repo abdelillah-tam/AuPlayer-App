@@ -58,7 +58,7 @@ class SoundRepositoryImpl @Inject constructor(): SoundRepository {
                     cursor.getLong(idIndex),
                     cursor.getString(dataIndex),
                     cursor.getString(soundNameIndex),
-                    cursor.getInt(durationIndex),
+                    cursor.getLong(durationIndex),
                     cursor.getString(artistIndex),
                     cursor.getInt(isMusicIndex),
                     cursor.getInt(albumIdIndex)

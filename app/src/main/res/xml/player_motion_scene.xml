@@ -123,14 +123,15 @@
             app:layout_constraintTop_toBottomOf="@id/player_sound_name"
             app:layout_constraintLeft_toRightOf="@id/song_timer_counter"
             app:layout_constraintRight_toLeftOf="@id/song_total_time"
-            />
+            android:layout_marginStart="8dp" />
         <Constraint
             android:id="@+id/song_timer_counter"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             app:layout_constraintBottom_toBottomOf="@id/song_timer"
             app:layout_constraintTop_toTopOf="@id/song_timer"
-            app:layout_constraintStart_toStartOf="@+id/backgrounds" />
+            app:layout_constraintStart_toStartOf="@+id/backgrounds"
+            android:layout_marginStart="8dp" />
         <Constraint
             android:id="@+id/song_total_time"
             android:layout_width="wrap_content"
@@ -139,7 +140,7 @@
             app:layout_constraintRight_toRightOf="@id/backgrounds"
             app:layout_constraintTop_toTopOf="@id/song_timer"
             app:layout_constraintBottom_toBottomOf="@id/song_timer"
-            />
+            android:layout_marginEnd="8dp" />
         <Constraint
             android:id="@+id/play_and_pause"
             android:layout_width="64dp"

@@ -9,7 +9,7 @@ data class SoundItem(
     val id: Long,
     val data : String,
     val soundName : String,
-    val duration : Int,
+    val duration : Long,
     val artist : String,
     val isMusic : Int,
     val albumId : Int

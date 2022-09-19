@@ -1,26 +1,29 @@
 package com.auplayer.player
 
-import android.app.Service
+import android.app.Notification
+import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.ContentUris
 import android.content.Intent
+import android.graphics.Bitmap
 import android.media.AudioAttributes
-import android.media.AudioFocusRequest
 import android.media.AudioManager
 import android.media.MediaPlayer
 import android.net.Uri
 import android.os.Binder
 import android.os.IBinder
-import android.provider.MediaStore
 import android.util.Log
+import androidx.core.app.NotificationCompat
+import androidx.core.content.res.ResourcesCompat
+import androidx.core.graphics.drawable.toBitmap
 import androidx.lifecycle.LifecycleService
 import androidx.lifecycle.lifecycleScope
-import androidx.media.AudioFocusRequestCompat
 import com.auplayer.player.domain.model.SoundItem
+import com.bumptech.glide.Glide
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
 
 private const val TAG = "PlaybackService"
 
@@ -93,38 +96,44 @@ class PlaybackService : LifecycleService(),
 
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        super.onStartCommand(intent, flags, startId)
-        val action = intent?.action
-        if (action != null) {
-            when (action) {
-                PLAY -> {
-                    soundItem = intent.getParcelableExtra<SoundItem>("soundItem")!!
-                    playerController.playSound(soundItem)
-                    isPlaying.value = false
-                }
-                STOP -> {
-                    if (mediaPlayer!!.isPlaying) {
-                        mediaPlayer!!.pause()
-                        lifecycleScope.launch{
-                            isPlaying.emit(false)
-                        }
+        try {
+            super.onStartCommand(intent, flags, startId)
+            val action = intent?.action
+            if (action != null) {
+                when (action) {
+                    PLAY -> {
+                        soundItem = intent.getParcelableExtra<SoundItem>("soundItem")!!
+                        playerController.playSound(soundItem)
+                        isPlaying.value = false
+                    }
+                    STOP -> {
+                        if (mediaPlayer!!.isPlaying) {
+                            mediaPlayer!!.pause()
+                            lifecycleScope.launch {
+                                isPlaying.emit(false)
+                            }
+                            startForeground(1, showNotification(getSoundItem()!!.soundName, playingState.value))
 
-                    } else {
-                        mediaPlayer!!.start()
-                        lifecycleScope.launch{
-                            isPlaying.emit(true)
+                        } else {
+                            mediaPlayer!!.start()
+                            lifecycleScope.launch {
+                                isPlaying.emit(true)
+                            }
+                            startForeground(1, showNotification(getSoundItem()!!.soundName, playingState.value))
                         }
                     }
-                }
-                NEXT -> {
-                    isPlaying.value = false
-                    playerController.nextSound()
-                }
-                PREVIOUS -> {
-                    isPlaying.value = false
-                    playerController.previousSound()
+                    NEXT -> {
+                        isPlaying.value = false
+                        playerController.nextSound()
+                    }
+                    PREVIOUS -> {
+                        isPlaying.value = false
+                        playerController.previousSound()
+                    }
                 }
             }
+        }catch (e: Exception){
+            e.printStackTrace()
         }
         return START_STICKY
     }
@@ -143,6 +152,7 @@ class PlaybackService : LifecycleService(),
                 lifecycleScope.launch {
                     isPlaying.emit(true)
                 }
+                startForeground(1, showNotification(getSoundItem()!!.soundName, playingState.value))
             }
         }
     }
@@ -187,9 +197,100 @@ class PlaybackService : LifecycleService(),
         return null
     }
 
+
     fun setCurrentSoundItem(soundItem: SoundItem){
         this.soundItem = soundItem
     }
+
+    private fun showNotification(soundName: String, playing: Boolean) : Notification {
+
+        val activityIntent = Intent(this, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+        }
+
+        val activityPendingIntent = PendingIntent.getActivity(
+            this,
+            0,
+            activityIntent,
+            PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val playIntent = Intent(this, NotificationReceiver::class.java).setAction(STOP)
+        val play = PendingIntent.getBroadcast(
+            this,
+            1,
+            playIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT
+        )
+
+        val nextIntent = Intent(this, NotificationReceiver::class.java).setAction(NEXT)
+        val next = PendingIntent.getBroadcast(
+            this,
+            2,
+            nextIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT
+        )
+
+        val previousIntent =
+            Intent(this, NotificationReceiver::class.java).setAction(PREVIOUS)
+        val previous = PendingIntent.getBroadcast(
+            this,
+            3,
+            previousIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT
+        )
+
+        val albumArt = Uri.parse("content://media/external/audio/albumart")
+        val uri = ContentUris.withAppendedId(
+            albumArt,
+            getSoundItem()!!.albumId + 0L
+        )
+        var picture: Bitmap?
+        runBlocking(Dispatchers.IO) {
+            try {
+                picture = Glide.with(applicationContext).asBitmap().load(uri).submit().get()
+            } catch (e: Exception) {
+                picture = null
+                e.printStackTrace()
+            }
+        }
+
+        val builder =
+            NotificationCompat.Builder(this, Application.CHANNEL_PLAYER_ID).apply {
+                setPriority(NotificationCompat.PRIORITY_MAX)
+                setOngoing(true)
+                setContentIntent(activityPendingIntent)
+                setStyle(androidx.media.app.NotificationCompat.MediaStyle())
+                setSmallIcon(R.drawable.ic_launcher_background)
+                if (picture != null) {
+                    setLargeIcon(
+                        picture
+                    )
+                } else {
+                    setLargeIcon(
+                        ResourcesCompat.getDrawable(
+                            resources,
+                            R.drawable.ic_launcher_background,
+                            null
+                        )!!.toBitmap()
+                    )
+                }
+                setContentTitle(soundName)
+                setOnlyAlertOnce(true)
+                setColorized(true)
+                addAction(R.drawable.ic_previous, "Previous", previous)
+                if (playing) {
+                    addAction(R.drawable.ic_pause, "play or stop", play)
+                } else {
+                    addAction(R.drawable.ic_play, "play or stop", play)
+                }
+                addAction(R.drawable.ic_next, "Next", next)
+
+            }.build()
+
+        return builder
+    }
+
     inner class LocalBinder : Binder() {
 
         fun getService(): PlaybackService = this@PlaybackService

@@ -2,24 +2,15 @@ package com.auplayer.player.ui.audiolist
 
 import android.Manifest
 import android.annotation.SuppressLint
-import android.app.NotificationManager
-import android.app.PendingIntent
 import android.content.*
-import android.content.Context.NOTIFICATION_SERVICE
 import android.content.pm.PackageManager
-import android.graphics.Bitmap
-import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
 import android.provider.MediaStore
-import android.util.Log
 import android.view.GestureDetector
 import android.view.MotionEvent
 import android.view.View
-import androidx.core.app.NotificationCompat
-import androidx.core.content.res.ResourcesCompat
-import androidx.core.graphics.drawable.toBitmap
 import androidx.core.view.GestureDetectorCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
@@ -31,11 +22,11 @@ import androidx.recyclerview.widget.RecyclerView
 import com.auplayer.player.*
 import com.auplayer.player.databinding.FragmentAudioListBinding
 import com.auplayer.player.domain.model.SoundItem
-import com.bumptech.glide.Glide
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import java.util.*
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -55,6 +46,7 @@ class AudioListFragment : Fragment(R.layout.fragment_audio_list), PlayerControll
 
     private lateinit var gestureDetector: GestureDetectorCompat
 
+    private lateinit var timer: Timer
 
     private val connection = object : ServiceConnection {
         override fun onServiceConnected(p0: ComponentName?, p1: IBinder?) {
@@ -65,10 +57,28 @@ class AudioListFragment : Fragment(R.layout.fragment_audio_list), PlayerControll
             lifecycleScope.launch {
                 mPlaybackService.playingState.collect { isPlaying ->
                     if (mPlaybackService.getSoundItem() != null) {
-                        showNotification(mPlaybackService.getSoundItem()!!.soundName, isPlaying)
                         binding.playerController.soundTitle.text =
                             mPlaybackService.getSoundItem()!!.soundName
                         binding.playerController.playAndPause.isChecked = !isPlaying
+                        binding.playerController.totalTime.text =
+                            milliSecondsToTime(mPlaybackService.getSoundItem()!!.duration)
+                        binding.playerController.soundTimerSlider.apply {
+                            valueFrom = 0f
+                            valueTo = mPlaybackService.getSoundItem()!!.duration.toFloat()
+                        }
+                        if (isPlaying) {
+                            timer.schedule(object : TimerTask() {
+                                override fun run() {
+                                    runBlocking(Dispatchers.Main) {
+                                        binding.playerController.soundTimer.text =
+                                            milliSecondsToTime(mPlaybackService.getMediaPlayer().currentPosition.toLong())
+                                        binding.playerController.soundTimerSlider.value =
+                                            mPlaybackService.getMediaPlayer().currentPosition.toFloat()
+                                    }
+                                }
+
+                            }, 0, 1000)
+                        }
                     }
                 }
 
@@ -86,7 +96,7 @@ class AudioListFragment : Fragment(R.layout.fragment_audio_list), PlayerControll
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         binding = FragmentAudioListBinding.bind(view)
-
+        timer = Timer()
         gestureDetector =
             GestureDetectorCompat(requireContext(), object : GestureDetector.OnGestureListener {
                 override fun onDown(p0: MotionEvent?): Boolean {
@@ -105,9 +115,9 @@ class AudioListFragment : Fragment(R.layout.fragment_audio_list), PlayerControll
                         val intent = Intent(requireContext(), PlaybackService::class.java)
                             .setAction(PLAY)
                             .putExtra("soundItem", soundItem)
-                        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                             mPlaybackService.startForegroundService(intent)
-                        }else{
+                        } else {
                             mPlaybackService.startService(intent)
                         }
                     }
@@ -170,9 +180,9 @@ class AudioListFragment : Fragment(R.layout.fragment_audio_list), PlayerControll
         binding.playerController.next.setOnClickListener {
             val intent = Intent(requireContext(), PlaybackService::class.java)
                 .setAction(NEXT)
-            if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 mPlaybackService.startForegroundService(intent)
-            }else{
+            } else {
                 mPlaybackService.startService(intent)
             }
         }
@@ -180,9 +190,9 @@ class AudioListFragment : Fragment(R.layout.fragment_audio_list), PlayerControll
         binding.playerController.playAndPause.setOnClickListener {
             val intent = Intent(requireContext(), PlaybackService::class.java)
                 .setAction(STOP)
-            if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 mPlaybackService.startForegroundService(intent)
-            }else{
+            } else {
                 mPlaybackService.startService(intent)
             }
 
@@ -191,12 +201,14 @@ class AudioListFragment : Fragment(R.layout.fragment_audio_list), PlayerControll
         binding.playerController.previous.setOnClickListener {
             val intent = Intent(requireContext(), PlaybackService::class.java)
                 .setAction(PREVIOUS)
-            if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 mPlaybackService.startForegroundService(intent)
-            }else{
+            } else {
                 mPlaybackService.startService(intent)
             }
         }
+
+
     }
 
     override fun onStart() {
@@ -233,98 +245,6 @@ class AudioListFragment : Fragment(R.layout.fragment_audio_list), PlayerControll
     }
 
 
-    private fun showNotification(soundName: String, playing: Boolean) {
-
-        val activityIntent = Intent(requireContext(), MainActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK
-        }
-
-        val activityPendingIntent = PendingIntent.getActivity(
-            requireContext(),
-            0,
-            activityIntent,
-            PendingIntent.FLAG_IMMUTABLE
-        )
-
-        val playIntent = Intent(requireContext(), NotificationReceiver::class.java).setAction(STOP)
-        val play = PendingIntent.getBroadcast(
-            requireContext(),
-            1,
-            playIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT
-        )
-
-        val nextIntent = Intent(requireContext(), NotificationReceiver::class.java).setAction(NEXT)
-        val next = PendingIntent.getBroadcast(
-            requireContext(),
-            2,
-            nextIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT
-        )
-
-        val previousIntent =
-            Intent(requireContext(), NotificationReceiver::class.java).setAction(PREVIOUS)
-        val previous = PendingIntent.getBroadcast(
-            requireContext(),
-            3,
-            previousIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT
-        )
-
-        val albumArt = Uri.parse("content://media/external/audio/albumart")
-        val uri = ContentUris.withAppendedId(
-            albumArt,
-            mPlaybackService.getSoundItem()!!.albumId + 0L
-        )
-        var picture: Bitmap?
-        runBlocking(Dispatchers.IO) {
-            try {
-                picture = Glide.with(requireContext()).asBitmap().load(uri).submit().get()
-            } catch (e: Exception) {
-                picture = null
-                e.printStackTrace()
-            }
-        }
-
-        val builder =
-            NotificationCompat.Builder(requireContext(), Application.CHANNEL_PLAYER_ID).apply {
-                setPriority(NotificationCompat.PRIORITY_MAX)
-                setOngoing(true)
-                setContentIntent(activityPendingIntent)
-                setStyle(androidx.media.app.NotificationCompat.MediaStyle())
-                setSmallIcon(R.drawable.ic_launcher_background)
-                if (picture != null) {
-                    setLargeIcon(
-                        picture
-                    )
-                } else {
-                    setLargeIcon(
-                        ResourcesCompat.getDrawable(
-                            resources,
-                            R.drawable.ic_launcher_background,
-                            null
-                        )!!.toBitmap()
-                    )
-                }
-                setContentTitle(soundName)
-                setOnlyAlertOnce(true)
-                setColorized(true)
-                addAction(R.drawable.ic_previous, "Previous", previous)
-                if (playing) {
-                    addAction(R.drawable.ic_pause, "play or stop", play)
-                } else {
-                    addAction(R.drawable.ic_play, "play or stop", play)
-                }
-                addAction(R.drawable.ic_next, "Next", next)
-
-            }.build()
-
-
-        val notificationManager =
-            activity?.getSystemService(NOTIFICATION_SERVICE) as NotificationManager
-        notificationManager.notify(0, builder)
-    }
-
     override fun playSound(soundItem: SoundItem) {
         val uri = ContentUris.withAppendedId(
             MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
@@ -334,7 +254,6 @@ class AudioListFragment : Fragment(R.layout.fragment_audio_list), PlayerControll
             reset()
             setDataSource(requireContext(), uri)
             prepareAsync()
-
         }
     }
 
@@ -370,5 +289,13 @@ class AudioListFragment : Fragment(R.layout.fragment_audio_list), PlayerControll
                 prepareAsync()
             }
         }
+    }
+
+    private fun milliSecondsToTime(milliseconds: Long): String {
+        val minutes = milliseconds / 1000 / 60
+        val seconds = milliseconds / 1000 % 60
+
+        return String.format("%02d:%02d", minutes, seconds)
+
     }
 }
