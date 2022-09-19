@@ -38,8 +38,6 @@ class AudioListFragment : Fragment(R.layout.fragment_audio_list), PlayerControll
     private var mBound: Boolean = false
     private val audioListViewModel: AudioListViewModel by viewModels()
 
-    private var mCurrentPosition = 0
-
     @Inject
     lateinit var audioRecyclerAdapter: AudioRecyclerAdapter
 
@@ -110,8 +108,8 @@ class AudioListFragment : Fragment(R.layout.fragment_audio_list), PlayerControll
                 override fun onSingleTapUp(p0: MotionEvent?): Boolean {
                     val view = binding.listOfSounds.findChildViewUnder(p0!!.x, p0.y)
                     if (view != null && mBound) {
-                        mCurrentPosition = binding.listOfSounds.getChildAdapterPosition(view)
-                        val soundItem = audioRecyclerAdapter.getItem(position = mCurrentPosition)
+                        mPlaybackService.currentPosition = binding.listOfSounds.getChildAdapterPosition(view)
+                        val soundItem = audioRecyclerAdapter.getItem(position = mPlaybackService.currentPosition)
                         val intent = Intent(requireContext(), PlaybackService::class.java)
                             .setAction(PLAY)
                             .putExtra("soundItem", soundItem)
@@ -258,9 +256,9 @@ class AudioListFragment : Fragment(R.layout.fragment_audio_list), PlayerControll
     }
 
     override fun nextSound() {
-        if (mCurrentPosition < audioRecyclerAdapter.itemCount) {
-            mCurrentPosition += 1
-            val nextSoundItem = audioRecyclerAdapter.getItem(mCurrentPosition)
+        if (mPlaybackService.currentPosition < audioRecyclerAdapter.itemCount) {
+            mPlaybackService.currentPosition += 1
+            val nextSoundItem = audioRecyclerAdapter.getItem(mPlaybackService.currentPosition)
             val uri = ContentUris.withAppendedId(
                 MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
                 nextSoundItem.id
@@ -275,9 +273,9 @@ class AudioListFragment : Fragment(R.layout.fragment_audio_list), PlayerControll
     }
 
     override fun previousSound() {
-        if (mCurrentPosition >= 0) {
-            mCurrentPosition -= 1
-            val previousSoundItem = audioRecyclerAdapter.getItem(mCurrentPosition)
+        if (mPlaybackService.currentPosition >= 0) {
+            mPlaybackService.currentPosition -= 1
+            val previousSoundItem = audioRecyclerAdapter.getItem(mPlaybackService.currentPosition)
             val uri = ContentUris.withAppendedId(
                 MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
                 previousSoundItem.id
