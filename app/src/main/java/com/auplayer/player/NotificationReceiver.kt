@@ -5,7 +5,6 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
-import android.util.Log
 
 
 class NotificationReceiver : BroadcastReceiver() {
@@ -24,8 +23,8 @@ class NotificationReceiver : BroadcastReceiver() {
                     context.startService(intent1)
                 }
             }
-            STOP -> {
-                intent1.setAction(STOP)
+            PAUSE -> {
+                intent1.setAction(PAUSE)
                 if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                     context.startForegroundService(intent1)
                 }else{

@@ -4,14 +4,16 @@ import android.app.Application
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
+import android.net.Uri
 import android.os.Build
 import dagger.hilt.android.HiltAndroidApp
 
 const val PLAY = "PLAY"
-const val STOP = "STOP"
+const val PAUSE = "STOP"
 const val NEXT = "NEXT"
 const val PREVIOUS = "PREVIOUS"
 
+const val ALBUM_ART_URI = "content://media/external/audio/albumart"
 @HiltAndroidApp
 class Application : Application() {
 

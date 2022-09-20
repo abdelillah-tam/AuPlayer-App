@@ -16,17 +16,17 @@ class AudioRecyclerAdapter @Inject constructor() : RecyclerView.Adapter<AudioRec
     class ViewHolder(view: View) : RecyclerView.ViewHolder(view)
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-        val view = LayoutInflater.from(parent.context).inflate(R.layout.song_item, parent, false)
+        val view = LayoutInflater.from(parent.context).inflate(R.layout.sound_item, parent, false)
         return ViewHolder(view)
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        val songName = holder.itemView.findViewById(R.id.song_name) as MaterialTextView
-        val songArtist = holder.itemView.findViewById(R.id.song_artist) as MaterialTextView
+        val soundName = holder.itemView.findViewById(R.id.sound_name) as MaterialTextView
+        val soundArtist = holder.itemView.findViewById(R.id.sound_artist) as MaterialTextView
 
         val soundItem = list[position]
-        songName.text = soundItem.soundName
-        songArtist.text = soundItem.artist
+        soundName.text = soundItem.soundName
+        soundArtist.text = soundItem.artist
 
     }
 

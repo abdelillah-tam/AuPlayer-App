@@ -34,7 +34,8 @@ class PlaybackService : LifecycleService(),
     MediaPlayer.OnCompletionListener,
     MediaPlayer.OnBufferingUpdateListener,
     MediaPlayer.OnErrorListener,
-    MediaPlayer.OnSeekCompleteListener {
+    MediaPlayer.OnSeekCompleteListener,
+    AudioManager.OnAudioFocusChangeListener {
 
     private var mediaPlayer: MediaPlayer? = null
 
@@ -47,6 +48,8 @@ class PlaybackService : LifecycleService(),
     private lateinit var soundItem: SoundItem
 
     private lateinit var playerController: PlayerController
+
+    private lateinit var audioManager: AudioManager
 
     override fun onCreate() {
         super.onCreate()
@@ -66,38 +69,8 @@ class PlaybackService : LifecycleService(),
             setOnErrorListener(this@PlaybackService)
             setOnSeekCompleteListener(this@PlaybackService)
         }
-        val audioManager = getSystemService(AUDIO_SERVICE) as AudioManager
+        audioManager = getSystemService(AUDIO_SERVICE) as AudioManager
 
-        val requestListener = AudioManager.OnAudioFocusChangeListener { focus ->
-            when (focus) {
-                AudioManager.AUDIOFOCUS_GAIN -> {
-                    if (!mediaPlayer!!.isPlaying && playingState.value) {
-                        mediaPlayer!!.start()
-                    }
-                }
-
-                AudioManager.AUDIOFOCUS_LOSS -> {
-                    if (mediaPlayer != null) {
-                        mediaPlayer!!.stop()
-                        mediaPlayer!!.release()
-                        mediaPlayer = null
-                    }
-                }
-
-                AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> {
-                    if (mediaPlayer != null && mediaPlayer!!.isPlaying) {
-                        mediaPlayer!!.pause()
-                    }
-                }
-            }
-        }
-
-
-        audioManager.requestAudioFocus(
-            requestListener,
-            AudioManager.STREAM_MUSIC,
-            AudioManager.AUDIOFOCUS_GAIN
-        )
     }
 
 
@@ -112,26 +85,30 @@ class PlaybackService : LifecycleService(),
                         playerController.playSound(soundItem)
                         isPlaying.value = false
                     }
-                    STOP -> {
-                        if (mediaPlayer!!.isPlaying) {
-                            mediaPlayer!!.pause()
-                            lifecycleScope.launch {
-                                isPlaying.emit(false)
+                    PAUSE -> {
+                        lifecycleScope.launch {
+                            playerController.pauseSound().collect { isPaused ->
+                                if (isPaused) {
+                                    isPlaying.emit(false)
+                                    audioManager.abandonAudioFocus(this@PlaybackService)
+                                    startForeground(
+                                        1,
+                                        showNotification(
+                                            getSoundItem()!!.soundName,
+                                            playingState.value
+                                        )
+                                    )
+                                } else {
+                                    isPlaying.emit(true)
+                                    startForeground(
+                                        1,
+                                        showNotification(
+                                            getSoundItem()!!.soundName,
+                                            playingState.value
+                                        )
+                                    )
+                                }
                             }
-                            startForeground(
-                                1,
-                                showNotification(getSoundItem()!!.soundName, playingState.value)
-                            )
-
-                        } else {
-                            mediaPlayer!!.start()
-                            lifecycleScope.launch {
-                                isPlaying.emit(true)
-                            }
-                            startForeground(
-                                1,
-                                showNotification(getSoundItem()!!.soundName, playingState.value)
-                            )
                         }
                     }
                     NEXT -> {
@@ -158,6 +135,11 @@ class PlaybackService : LifecycleService(),
     override fun onPrepared(p0: MediaPlayer?) {
         Log.e(TAG, "onPrepared: called")
         if (p0 != null) {
+            audioManager.requestAudioFocus(
+                this,
+                AudioManager.STREAM_MUSIC,
+                AudioManager.AUDIOFOCUS_GAIN
+            )
             p0.start()
             if (p0.isPlaying) {
                 p0.isLooping = true
@@ -227,7 +209,7 @@ class PlaybackService : LifecycleService(),
             PendingIntent.FLAG_IMMUTABLE
         )
 
-        val playIntent = Intent(this, NotificationReceiver::class.java).setAction(STOP)
+        val playIntent = Intent(this, NotificationReceiver::class.java).setAction(PAUSE)
         val play = PendingIntent.getBroadcast(
             this,
             1,
@@ -252,7 +234,7 @@ class PlaybackService : LifecycleService(),
             PendingIntent.FLAG_UPDATE_CURRENT
         )
 
-        val albumArt = Uri.parse("content://media/external/audio/albumart")
+        val albumArt = Uri.parse(ALBUM_ART_URI)
         val uri = ContentUris.withAppendedId(
             albumArt,
             getSoundItem()!!.albumId + 0L
@@ -273,7 +255,7 @@ class PlaybackService : LifecycleService(),
                 setOngoing(true)
                 setContentIntent(activityPendingIntent)
                 setStyle(androidx.media.app.NotificationCompat.MediaStyle())
-                setSmallIcon(R.drawable.ic_launcher_background)
+                setSmallIcon(R.drawable.ic_app_logo_notification)
                 if (picture != null) {
                     setLargeIcon(
                         picture
@@ -282,7 +264,7 @@ class PlaybackService : LifecycleService(),
                     setLargeIcon(
                         ResourcesCompat.getDrawable(
                             resources,
-                            R.drawable.ic_launcher_background,
+                            R.drawable.auplayer_disc,
                             null
                         )!!.toBitmap()
                     )
@@ -291,6 +273,7 @@ class PlaybackService : LifecycleService(),
                 setOnlyAlertOnce(true)
                 setColorized(true)
                 setShowWhen(false)
+                setSilent(true)
                 addAction(R.drawable.ic_previous, "Previous", previous)
                 if (playing) {
                     addAction(R.drawable.ic_pause, "play or stop", play)
@@ -307,5 +290,30 @@ class PlaybackService : LifecycleService(),
     inner class LocalBinder : Binder() {
 
         fun getService(): PlaybackService = this@PlaybackService
+    }
+
+    override fun onAudioFocusChange(focus: Int) {
+        when (focus) {
+            AudioManager.AUDIOFOCUS_GAIN -> {
+                if (!mediaPlayer!!.isPlaying && playingState.value) {
+                    mediaPlayer!!.start()
+                }
+            }
+
+            AudioManager.AUDIOFOCUS_LOSS -> {
+                if (mediaPlayer != null) {
+                    mediaPlayer!!.stop()
+                    mediaPlayer!!.release()
+                    mediaPlayer = null
+                    audioManager.abandonAudioFocus(this)
+                }
+            }
+
+            AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> {
+                if (mediaPlayer != null && mediaPlayer!!.isPlaying) {
+                    mediaPlayer!!.pause()
+                }
+            }
+        }
     }
 }

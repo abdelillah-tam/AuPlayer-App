@@ -34,8 +34,4 @@ class AudioListViewModel @Inject constructor(
         }
     }
 
-    fun playSound(uri: Uri){
-        viewModelScope.launch {
-        }
-    }
 }

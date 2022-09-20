@@ -5,6 +5,7 @@ import android.util.AttributeSet
 import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
+import androidx.appcompat.widget.AppCompatImageView
 import androidx.constraintlayout.motion.widget.MotionLayout
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.checkbox.MaterialCheckBox
@@ -19,6 +20,7 @@ class PlayerControllerMotionLayout @JvmOverloads constructor(
 
     private var motionLayout: MotionLayout
 
+    var playerImage: AppCompatImageView
     var soundTitle: MaterialTextView
     var playAndPause: MaterialCheckBox
     var next: MaterialButton
@@ -26,6 +28,7 @@ class PlayerControllerMotionLayout @JvmOverloads constructor(
     var totalTime: MaterialTextView
     var soundTimer: MaterialTextView
     var soundTimerSlider: Slider
+
     private var view: View
 
 
@@ -33,13 +36,14 @@ class PlayerControllerMotionLayout @JvmOverloads constructor(
         motionLayout = LayoutInflater.from(context)
             .inflate(R.layout.player_layout, this, false) as MotionLayout
         addView(motionLayout)
+        playerImage = motionLayout.findViewById(R.id.player_image) as AppCompatImageView
         soundTitle = motionLayout.findViewById(R.id.player_sound_name) as MaterialTextView
         playAndPause = motionLayout.findViewById(R.id.play_and_pause) as MaterialCheckBox
-        next = motionLayout.findViewById(R.id.next_audio) as MaterialButton
-        previous = motionLayout.findViewById(R.id.previous_audio) as MaterialButton
-        totalTime = motionLayout.findViewById(R.id.song_total_time) as MaterialTextView
-        soundTimer = motionLayout.findViewById(R.id.song_timer_counter) as MaterialTextView
-        soundTimerSlider = motionLayout.findViewById(R.id.song_timer) as Slider
+        next = motionLayout.findViewById(R.id.next_sound) as MaterialButton
+        previous = motionLayout.findViewById(R.id.previous_sound) as MaterialButton
+        totalTime = motionLayout.findViewById(R.id.sound_total_time) as MaterialTextView
+        soundTimer = motionLayout.findViewById(R.id.sound_timer_counter) as MaterialTextView
+        soundTimerSlider = motionLayout.findViewById(R.id.sound_timer) as Slider
         view = motionLayout.findViewById(R.id.backgrounds) as View
 
 

@@ -4,6 +4,8 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.content.*
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
@@ -11,6 +13,7 @@ import android.provider.MediaStore
 import android.view.GestureDetector
 import android.view.MotionEvent
 import android.view.View
+import androidx.core.content.res.ResourcesCompat
 import androidx.core.view.GestureDetectorCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
@@ -22,8 +25,11 @@ import androidx.recyclerview.widget.RecyclerView
 import com.auplayer.player.*
 import com.auplayer.player.databinding.FragmentAudioListBinding
 import com.auplayer.player.domain.model.SoundItem
+import com.bumptech.glide.Glide
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import java.util.*
@@ -35,12 +41,13 @@ class AudioListFragment : Fragment(R.layout.fragment_audio_list), PlayerControll
     private lateinit var binding: FragmentAudioListBinding
 
     private lateinit var mPlaybackService: PlaybackService
+
     private var mBound: Boolean = false
+
     private val audioListViewModel: AudioListViewModel by viewModels()
 
     @Inject
     lateinit var audioRecyclerAdapter: AudioRecyclerAdapter
-
 
     private lateinit var gestureDetector: GestureDetectorCompat
 
@@ -55,11 +62,32 @@ class AudioListFragment : Fragment(R.layout.fragment_audio_list), PlayerControll
             lifecycleScope.launch {
                 mPlaybackService.playingState.collect { isPlaying ->
                     if (mPlaybackService.getSoundItem() != null) {
-                        binding.playerController.soundTitle.text =
-                            mPlaybackService.getSoundItem()!!.soundName
+                        val uri = ContentUris.withAppendedId(
+                            Uri.parse(ALBUM_ART_URI),
+                            mPlaybackService.getSoundItem()!!.albumId + 0L
+                        )
+                        var picture: Bitmap?
+                        runBlocking(Dispatchers.IO) {
+                            try {
+                                picture =
+                                    Glide.with(requireContext()).asBitmap().load(uri).submit().get()
+                            } catch (e: Exception) {
+                                picture = null
+                                e.printStackTrace()
+                            }
+                        }
+                        if (picture != null) {
+                            binding.playerController.playerImage.setImageBitmap(picture)
+                        } else binding.playerController.playerImage.setImageDrawable(
+                            ResourcesCompat.getDrawable(
+                                resources,
+                                R.drawable.auplayer_disc,
+                                null
+                            )
+                        )
+                        binding.playerController.soundTitle.text = mPlaybackService.getSoundItem()!!.soundName
                         binding.playerController.playAndPause.isChecked = !isPlaying
-                        binding.playerController.totalTime.text =
-                            milliSecondsToTime(mPlaybackService.getSoundItem()!!.duration)
+                        binding.playerController.totalTime.text = milliSecondsToTime(mPlaybackService.getSoundItem()!!.duration)
                         binding.playerController.soundTimerSlider.apply {
                             valueFrom = 0f
                             valueTo = mPlaybackService.getSoundItem()!!.duration.toFloat()
@@ -68,14 +96,12 @@ class AudioListFragment : Fragment(R.layout.fragment_audio_list), PlayerControll
                             timer.schedule(object : TimerTask() {
                                 override fun run() {
                                     runBlocking(Dispatchers.Main) {
-                                        binding.playerController.soundTimer.text =
-                                            milliSecondsToTime(mPlaybackService.getMediaPlayer().currentPosition.toLong())
-                                        binding.playerController.soundTimerSlider.value =
-                                            mPlaybackService.getMediaPlayer().currentPosition.toFloat()
+                                        binding.playerController.soundTimer.text = milliSecondsToTime(mPlaybackService.getMediaPlayer().currentPosition.toLong())
+                                        binding.playerController.soundTimerSlider.value = mPlaybackService.getMediaPlayer().currentPosition.toFloat()
                                     }
                                 }
 
-                            }, 0, 1000)
+                            }, 0, 500)
                         }
                     }
                 }
@@ -108,8 +134,10 @@ class AudioListFragment : Fragment(R.layout.fragment_audio_list), PlayerControll
                 override fun onSingleTapUp(p0: MotionEvent?): Boolean {
                     val view = binding.listOfSounds.findChildViewUnder(p0!!.x, p0.y)
                     if (view != null && mBound) {
-                        mPlaybackService.currentPosition = binding.listOfSounds.getChildAdapterPosition(view)
-                        val soundItem = audioRecyclerAdapter.getItem(position = mPlaybackService.currentPosition)
+                        mPlaybackService.currentPosition =
+                            binding.listOfSounds.getChildAdapterPosition(view)
+                        val soundItem =
+                            audioRecyclerAdapter.getItem(position = mPlaybackService.currentPosition)
                         val intent = Intent(requireContext(), PlaybackService::class.java)
                             .setAction(PLAY)
                             .putExtra("soundItem", soundItem)
@@ -187,7 +215,7 @@ class AudioListFragment : Fragment(R.layout.fragment_audio_list), PlayerControll
 
         binding.playerController.playAndPause.setOnClickListener {
             val intent = Intent(requireContext(), PlaybackService::class.java)
-                .setAction(STOP)
+                .setAction(PAUSE)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 mPlaybackService.startForegroundService(intent)
             } else {
@@ -214,7 +242,6 @@ class AudioListFragment : Fragment(R.layout.fragment_audio_list), PlayerControll
         Intent(requireContext(), PlaybackService::class.java).also { intent ->
             activity?.bindService(intent, connection, Context.BIND_AUTO_CREATE)
         }
-
     }
 
 
@@ -254,6 +281,17 @@ class AudioListFragment : Fragment(R.layout.fragment_audio_list), PlayerControll
             prepareAsync()
         }
     }
+
+    override fun pauseSound(): Flow<Boolean> = flow {
+        if (mPlaybackService.getMediaPlayer().isPlaying) {
+            mPlaybackService.getMediaPlayer().pause()
+            emit(true)
+        } else {
+            mPlaybackService.getMediaPlayer().start()
+            emit(false)
+        }
+    }
+
 
     override fun nextSound() {
         if (mPlaybackService.currentPosition < audioRecyclerAdapter.itemCount) {

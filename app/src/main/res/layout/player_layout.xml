@@ -15,7 +15,15 @@
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:background="#fff"
+        tools:layout_editor_absoluteX="16dp"
         tools:layout_editor_absoluteY="716dp" />
+
+    <androidx.appcompat.widget.AppCompatImageView
+        android:layout_width="250dp"
+        android:layout_height="250dp"
+        android:src="@drawable/auplayer_disc"
+        android:id="@+id/player_image"
+        />
 
     <com.google.android.material.textview.MaterialTextView
         android:id="@+id/player_sound_name"
@@ -23,12 +31,12 @@
         android:layout_height="wrap_content"
         android:gravity="center"
         android:textColor="#000"
-        android:ellipsize="end"
+        android:ellipsize="marquee"
         tools:layout_editor_absoluteY="716dp"
         tools:text="دردشة حول مدرسة المنار التابعة لمحمد 05" />
 
     <com.google.android.material.slider.Slider
-        android:id="@+id/song_timer"
+        android:id="@+id/sound_timer"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
@@ -42,19 +50,21 @@
         app:trackHeight="2dp" />
 
     <com.google.android.material.textview.MaterialTextView
-        android:id="@+id/song_timer_counter"
+        android:id="@+id/sound_timer_counter"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
         android:padding="8dp"
+        android:textColor="#000"
         tools:text="03:33" />
 
     <com.google.android.material.textview.MaterialTextView
-        android:id="@+id/song_total_time"
+        android:id="@+id/sound_total_time"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
         android:padding="8dp"
+        android:textColor="#000"
         tools:text="04:56" />
 
     <com.google.android.material.checkbox.MaterialCheckBox
@@ -69,7 +79,7 @@
         app:layout_constraintTop_toTopOf="@+id/backgrounds" />
 
     <com.google.android.material.button.MaterialButton
-        android:id="@+id/next_audio"
+        android:id="@+id/next_sound"
         android:layout_width="100dp"
         android:layout_height="100dp"
         android:background="@drawable/ic_next"
@@ -79,7 +89,7 @@
         app:layout_constraintStart_toEndOf="@+id/checkBox" />
 
     <com.google.android.material.button.MaterialButton
-        android:id="@+id/previous_audio"
+        android:id="@+id/previous_sound"
         android:layout_width="100dp"
         android:layout_height="100dp"
         android:background="@drawable/ic_previous"
