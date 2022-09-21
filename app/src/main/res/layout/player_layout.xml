@@ -14,7 +14,7 @@
         android:id="@+id/backgrounds"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:background="#fff"
+        android:background="#FFF1F4"
         tools:layout_editor_absoluteX="16dp"
         tools:layout_editor_absoluteY="716dp" />
 

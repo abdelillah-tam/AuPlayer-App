@@ -18,8 +18,8 @@ class PlayerControllerMotionLayout @JvmOverloads constructor(
     defStyleAttrs: Int = 0
 ) : MotionLayout(context, attrs, defStyleAttrs) {
 
-    private var motionLayout: MotionLayout
-
+    var motionLayout: MotionLayout
+    var viewBackground: View
     var playerImage: AppCompatImageView
     var soundTitle: MaterialTextView
     var playAndPause: MaterialCheckBox
@@ -36,6 +36,7 @@ class PlayerControllerMotionLayout @JvmOverloads constructor(
         motionLayout = LayoutInflater.from(context)
             .inflate(R.layout.player_layout, this, false) as MotionLayout
         addView(motionLayout)
+        viewBackground = motionLayout.findViewById(R.id.backgrounds) as View
         playerImage = motionLayout.findViewById(R.id.player_image) as AppCompatImageView
         soundTitle = motionLayout.findViewById(R.id.player_sound_name) as MaterialTextView
         playAndPause = motionLayout.findViewById(R.id.play_and_pause) as MaterialCheckBox
@@ -70,5 +71,6 @@ class PlayerControllerMotionLayout @JvmOverloads constructor(
             true
         }
     }
+
 
 }

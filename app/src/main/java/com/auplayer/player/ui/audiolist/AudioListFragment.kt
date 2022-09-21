@@ -5,14 +5,17 @@ import android.annotation.SuppressLint
 import android.content.*
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
+import android.graphics.drawable.ColorDrawable
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
 import android.provider.MediaStore
+import android.util.Log
 import android.view.GestureDetector
 import android.view.MotionEvent
 import android.view.View
+import androidx.constraintlayout.motion.widget.MotionLayout
 import androidx.core.content.res.ResourcesCompat
 import androidx.core.view.GestureDetectorCompat
 import androidx.fragment.app.Fragment
@@ -234,6 +237,49 @@ class AudioListFragment : Fragment(R.layout.fragment_audio_list), PlayerControll
             }
         }
 
+        binding.playerController.motionLayout.setTransitionListener(object : MotionLayout.TransitionListener{
+            override fun onTransitionStarted(
+                motionLayout: MotionLayout?,
+                startId: Int,
+                endId: Int
+            ) {
+            }
+
+            override fun onTransitionChange(
+                motionLayout: MotionLayout?,
+                startId: Int,
+                endId: Int,
+                progress: Float
+            ) {
+            }
+
+            override fun onTransitionCompleted(motionLayout: MotionLayout?, currentId: Int) {
+                if(motionLayout != null){
+                    when(motionLayout.currentState){
+                        R.id.start -> {
+                            val color = ResourcesCompat.getColor(resources, R.color.white, null)
+                            requireActivity().window.statusBarColor = color
+                            requireActivity().window.navigationBarColor = color
+                        }
+                        R.id.end -> {
+                            val color = (binding.playerController.viewBackground.background as ColorDrawable).color
+                            requireActivity().window.statusBarColor = color
+                            requireActivity().window.navigationBarColor = color
+                        }
+                    }
+                }
+            }
+
+            override fun onTransitionTrigger(
+                motionLayout: MotionLayout?,
+                triggerId: Int,
+                positive: Boolean,
+                progress: Float
+            ) {
+
+            }
+
+        })
 
     }
 
